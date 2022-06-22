@@ -1,0 +1,7 @@
+dependencies {
+    implementation 'org.apache.tika:tika-core:2.4.1'
+    implementation 'org.apache.tika:tika-parsers:2.4.1'
+    implementation 'com.epam.songservice:interface:0.0.1'
+    implementation 'org.apache.tika:tika-parser-audiovideo-module:2.4.1'
+
+}
