@@ -8,10 +8,8 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.mp3.Mp3Parser;
 import org.apache.tika.sax.BodyContentHandler;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
-
-import java.io.File;
-import java.io.FileInputStream;
 
 import static com.epam.resourceprocessor.processor.MetadataProperty.ALBUM;
 import static com.epam.resourceprocessor.processor.MetadataProperty.ARTIST;
@@ -27,17 +25,19 @@ import static com.epam.resourceprocessor.processor.MetadataProperty.TITLE;
 @Component
 public class SongMetadataProcessor {
 
+    private static final String ZERO = "0";
+    private static final String TIME_DELIMITER = ":";
+
     @SneakyThrows
-    public void processSongMetadata() {
-        BodyContentHandler handler = new BodyContentHandler();
-        Metadata metadata = new Metadata();
+    public SongMetadataDto processSongMetadata(ByteArrayResource resource) {
+        val handler = new BodyContentHandler();
+        val metadata = new Metadata();
         val parseContext = new ParseContext();
 
-        //Mp3 parser
         val mp3Parser = new Mp3Parser();
-        mp3Parser.parse(loadSong(), handler, metadata, parseContext);
+        mp3Parser.parse(resource.getInputStream(), handler, metadata, parseContext);
 
-        var stringDuration = metadata.get(DURATION.getName());
+        val stringDuration = metadata.get(DURATION.getName());
         val metadataDto = SongMetadataDto.builder()
                 .album(metadata.get(ALBUM.getName()))
                 .artist(metadata.get(ARTIST.getName()))
@@ -47,18 +47,20 @@ public class SongMetadataProcessor {
                 .resourceId(1L)
                 .build();
         log.info(metadataDto.toString());
+        return metadataDto;
     }
 
     private String parseSongDuration(String stringDuration) {
         val durationInSeconds = stringDuration.substring(0, stringDuration.indexOf('.'));
         val intSeconds = Integer.parseInt(durationInSeconds);
-        return intSeconds/60 + ":" + intSeconds%60;
-    }
-
-    @SneakyThrows
-    private FileInputStream loadSong() {
-        val classLoader = getClass().getClassLoader();
-        val file = new File(classLoader.getResource("Lose_Yourself.mp3").getFile());
-        return new FileInputStream(file);
+        var stringSeconds = String.valueOf(intSeconds%60);
+        if(stringSeconds.length() == 1) {
+            stringSeconds = ZERO + stringSeconds;
+        }
+        var stringMinutes =  String.valueOf(intSeconds/60);
+        if(stringMinutes.length() == 1) {
+            stringMinutes = ZERO + stringMinutes;
+        }
+        return stringMinutes + TIME_DELIMITER + stringSeconds;
     }
 }
